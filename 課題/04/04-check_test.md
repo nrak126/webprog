@@ -43,7 +43,7 @@ A.
 
 A.
 
-    a == b;
+    a === b;
 
 ## Check Test p77
 
