@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>音声タイマー</title>
+    <script>
+      let targetTime, th, tm, ts; // セットした時間、時、分、秒
+      let startTime, timer; // 開始時間、タイマー
+      let oText = ""; // 直前に発生したテキスト
+
+      // 初期化関数
+      const init = () => {
+        // ストップボタンの無効化
+        document.getElementById("stop").disabled = true;
+      };
+
+      // タイマー開始
+      const startTimer = () => {
+        targetTime = document.getElementById("time").value;
+        th = Number(targetTime.split(":")[0]);
+        tm = Number(targetTime.split(":")[1]);
+        ts = Number(targetTime.split(":")[2]);
+        if (isNaN(ts)) ts = 0;
+
+        let text = "スタート、残り、";
+        if (th > 0) text += `${th}時間`;
+        if (tm > 0) text += `${tm}分`;
+        if (ts > 0) text += `${ts}秒`;
+        text += "です。";
+        oText = "";
+        speech(text);
+
+        // タイマースタート
+        startTime = Date.now();
+        timer = setInterval(update, 100);
+
+        // ボタンの有効/無効設定
+        document.getElementById("time").disabled = true;
+        document.getElementById("start").disabled = true;
+        document.getElementById("stop").disabled = false;
+      };
+
+      // タイマー停止
+      const stopTimer = () => {
+        clearInterval(timer);
+        document.getElementById("time").disabled = false;
+        document.getElementById("start").disabled = false;
+        document.getElementById("stop").disabled = true;
+      };
+
+      // タイマー更新
+      const update = () => {
+        const eTime = Math.floor((Date.now() - startTime) / 1000);
+        const eText = getTimeText(eTime);
+
+        const rTime = th * 3600 + tm * 60 + ts - eTime;
+        const rText = getTimeText(rTime);
+
+        // コメントアウト: 以下は終了時の処理
+        if (rTime < 0) {
+          speech("時間です。");
+          stopTimer();
+          document.getElementById("eTime").innerText = targetTime;
+          document.getElementById("rTime").innerText = "00:00:00";
+        } else {
+          document.getElementById("eTime").innerText = eText.HMS;
+          document.getElementById("rTime").innerText = rText.HMS;
+
+          let text = "";
+          const interval = document.getElementById("interval").value;
+
+          // コメントアウト: 経過時間の読み上げ
+          if (eTime > 0 && rTime > 10) {
+            if (
+              document.getElementById("elapsed").checked &&
+              eTime % (interval * 60) === 0
+            ) {
+              text = `${eText.jHM}経過。`;
+            }
+            if (
+              document.getElementById("remaining").checked &&
+              rTime % (interval * 60) === 0
+            ) {
+              text += `残り、${rText.jHM}`;
+            }
+            if (text !== "") speech(text);
+          }
+
+          // コメントアウト: 10秒前カウントダウン
+          if (document.getElementById("countdown").checked && rTime < 11) {
+            if (rTime > 0) speech(rTime);
+            if (rTime === 0) speech("ゼロ");
+          }
+        }
+      };
+
+      // コメントアウト: 時間をテキスト形式に変換
+      const getTimeText = (time) => {
+        const h = Math.floor(time / 3600);
+        const m = Math.floor((time - h * 3600) / 60);
+        const s = Math.floor(time - h * 3600 - m * 60);
+
+        const hh = ("00" + h).slice(-2);
+        const mm = ("00" + m).slice(-2);
+        const ss = ("00" + s).slice(-2);
+        const hms = `${hh}:${mm}:${ss}`;
+
+        let hm = "";
+        if (h > 0) hm += `${h}時間`;
+        if (m > 0) hm += `${m}分`;
+        return { HMS: hms, jHM: hm };
+      };
+
+      // コメントアウト: 音声読み上げ
+      const speech = (text) => {
+        if (oText !== text) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance();
+          utterance.text = text;
+          utterance.lang = "ja-JP";
+          window.speechSynthesis.speak(utterance);
+          oText = text;
+        }
+      };
+    </script>
+    <style>
+      /* コメントアウト: スタイル設定 */
+      input[type="number"] {
+        width: 35px;
+      }
+      span {
+        vertical-align: top;
+        font: bold 80px sans-serif;
+      }
+      .blue {
+        color: #0000cc;
+      }
+      .red {
+        color: #cc0000;
+      }
+    </style>
+  </head>
+  <body onload="init()">
+    <p>音声タイマー</p>
+    <!-- コメントアウト: 時間設定 -->
+    <input type="time" id="time" value="00:30:00" step="1" />
+    <!-- コメントアウト: スタートボタン -->
+    <input type="button" id="start" value="スタート" onclick="startTimer()" />
+    <!-- コメントアウト: ストップボタン -->
+    <input type="button" id="stop" value="ストップ" onclick="stopTimer()" />
+    <hr />
+    <!-- コメントアウト: 読み上げ間隔設定 -->
+    読み上げ間隔：<input
+      type="number"
+      id="interval"
+      value="5"
+      min="1"
+      max="60"
+    />分 <input type="checkbox" id="elapsed" checked />経過時間
+    <input type="checkbox" id="remaining" checked />残り時間
+    <input type="checkbox" id="countdown" checked />10秒前カウントダウン
+    <hr />
+    <!-- コメントアウト: 表示部分 -->
+    <div class="blue">経過時間 <span id="eTime">00:00:00</span></div>
+    <div class="red">残り時間 <span id="rTime">00:00:00</span></div>
+  </body>
+</html>
